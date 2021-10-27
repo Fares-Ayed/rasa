@@ -136,10 +136,10 @@ class DialogueMetaData:
     """Describes meta data per event in some dialogue."""
 
     preceding_user_turns: List[int]
-    timestamp: List[float]
+    event_ids: List[int]
 
     def __post_init__(self) -> None:
-        if len(self.preceding_user_turns) != len(self.timestamp):
+        if len(self.preceding_user_turns) != len(self.event_ids):
             raise RuntimeError(
                 "The given data can't possibly describe the same sequence of events "
                 "since it contains information for different numbers of events, "
@@ -332,16 +332,16 @@ class Marker(ABC):
             metadata for each tracked event
         """
         self.reset()
-        timestamps: List[int] = []
+        event_ids: List[int] = []
         preceding_user_turns: List[int] = [0]
-        for event in events:
+        for event_id, event in enumerate(events):
             is_user_turn = isinstance(event, UserUttered)
             preceding_user_turns.append(preceding_user_turns[-1] + int(is_user_turn))
-            timestamps.append(event.timestamp)
+            event_ids.append(event_id)
             self.track(event=event)
         preceding_user_turns = preceding_user_turns[:-1]  # drop last
         return DialogueMetaData(
-            preceding_user_turns=preceding_user_turns, timestamp=timestamps
+            preceding_user_turns=preceding_user_turns, event_ids=event_ids
         )
 
     def _filter_meta_data(self, meta_data: DialogueMetaData,) -> DialogueMetaData:
@@ -370,7 +370,7 @@ class Marker(ABC):
             preceding_user_turns=[
                 meta_data.preceding_user_turns[idx] for idx in indices
             ],
-            timestamp=[meta_data.timestamp[idx] for idx in indices],
+            event_ids=[meta_data.event_ids[idx] for idx in indices],
         )
 
     @staticmethod
